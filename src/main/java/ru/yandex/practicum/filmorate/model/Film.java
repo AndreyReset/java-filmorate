@@ -1,11 +1,9 @@
 package ru.yandex.practicum.filmorate.model;
 
 import lombok.Data;
-import org.hibernate.validator.constraints.time.DurationMin;
 import ru.yandex.practicum.filmorate.valid.After;
 
 import javax.validation.constraints.*;
-import java.time.Duration;
 import java.time.LocalDate;
 import java.util.Objects;
 

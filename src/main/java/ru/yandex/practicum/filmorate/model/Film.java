@@ -23,8 +23,8 @@ public class Film {
     @After(value = "1895-12-27", message = "Дата релиза не может быть раньше 28 декабря 1895 годя")
     private LocalDate releaseDate;
 
-    @DurationMin(message = "Длительность фильма не может быть отрицательным значением")
-    private Duration duration;
+    @Min(value = 0, message = "Длительность фильма не может быть отрицательным значением")
+    private int duration;
 
     @Override
     public boolean equals(Object o) {

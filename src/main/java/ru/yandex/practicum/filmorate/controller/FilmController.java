@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.Film;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,7 +14,7 @@ import java.util.List;
 public class FilmController {
 
     private List<Film> films = new ArrayList<>();
-    private int id = 0;
+    private int id = 1;
 
     @GetMapping("/films")
     public List<Film> findAll() {
@@ -31,13 +32,15 @@ public class FilmController {
     }
 
     @PutMapping(value = "/films")
-    public Film update(@Valid @RequestBody Film film) {
+    public Film update(@Valid @RequestBody Film film, HttpServletResponse response) {
         log.info("PUT запрос на обновление фильма");
         if (films.contains(film)) {
             log.info("Такой фильм имеется, обновляю");
             films.set(films.indexOf(film), film);
+            response.setStatus(200);
         } else {
             log.info("Такого фильма нет");
+            response.setStatus(500);
         }
         return film;
     }

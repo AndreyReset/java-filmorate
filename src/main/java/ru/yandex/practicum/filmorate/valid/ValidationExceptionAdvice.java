@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 
 @ControllerAdvice
 @Slf4j
-public class ValidationException {
+public class ValidationExceptionAdvice {
 
     @ResponseBody
     @ExceptionHandler(ConstraintViolationException.class)
@@ -22,15 +22,15 @@ public class ValidationException {
     public ValidationErrorResponse onConstraintValidationException(
             ConstraintViolationException e
     ) {
-        final List<Violation> violations = e.getConstraintViolations().stream()
+        final List<errorNotification> errorNotifications = e.getConstraintViolations().stream()
                 .map(
-                        violation -> new Violation(
+                        violation -> new errorNotification(
                                 violation.getPropertyPath().toString(),
                                 violation.getMessage()
                         )
                 )
                 .collect(Collectors.toList());
-        return new ValidationErrorResponse(violations);
+        return new ValidationErrorResponse(errorNotifications);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -39,11 +39,11 @@ public class ValidationException {
     public ValidationErrorResponse onMethodArgumentNotValidException(
             MethodArgumentNotValidException e
     ) {
-        final List<Violation> violations = e.getBindingResult().getFieldErrors().stream()
-                .map(error -> new Violation(error.getField(), error.getDefaultMessage()))
+        final List<errorNotification> errorNotifications = e.getBindingResult().getFieldErrors().stream()
+                .map(error -> new errorNotification(error.getField(), error.getDefaultMessage()))
                 .collect(Collectors.toList());
         log.info(e.getMessage());
-        return new ValidationErrorResponse(violations);
+        return new ValidationErrorResponse(errorNotifications);
     }
 
 }

@@ -34,14 +34,18 @@ public class FilmController {
     @PutMapping(value = "/films")
     public Film update(@Valid @RequestBody Film film, HttpServletResponse response) {
         log.info("PUT запрос на обновление фильма");
-        if (films.contains(film)) {
-            log.info("Такой фильм имеется, обновляю");
-            films.set(films.indexOf(film), film);
-            response.setStatus(200);
-        } else {
-            log.info("Такого фильма нет");
-            response.setStatus(500);
+        int i = 0;
+        for (Film f : films) {
+            if (f.getId().equals(film.getId())) {
+                log.info("Такой фильм имеется, обновляю");
+                films.set(i, film);
+                response.setStatus(200);
+                return film;
+            }
+            i += 1;
         }
+        log.info("Такого фильма нет");
+        response.setStatus(500);
         return film;
     }
 }

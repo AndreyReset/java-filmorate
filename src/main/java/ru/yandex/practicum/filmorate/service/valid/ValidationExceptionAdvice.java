@@ -1,4 +1,4 @@
-package ru.yandex.practicum.filmorate.valid;
+package ru.yandex.practicum.filmorate.service.valid;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -46,5 +46,15 @@ public class ValidationExceptionAdvice {
         return new ValidationErrorResponse(errorNotifications);
     }
 
+    @ExceptionHandler(CustomException.class)
+    @ResponseBody
+    public ValidationErrorResponse CustomException(
+            CustomException e
+    ) {
+        final List<errorNotification> errorNotifications = List.of(
+                new errorNotification("", e.getMessage()));
+        log.info(e.getMessage());
+        return new ValidationErrorResponse(errorNotifications);
+    }
 }
 

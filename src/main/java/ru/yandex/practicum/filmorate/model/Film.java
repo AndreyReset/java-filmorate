@@ -1,15 +1,18 @@
 package ru.yandex.practicum.filmorate.model;
 
 import lombok.Data;
-import ru.yandex.practicum.filmorate.valid.After;
+import ru.yandex.practicum.filmorate.service.valid.After;
 
 import javax.validation.constraints.*;
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @Data
 public class Film {
 
-    private Integer id;
+    private Long id;
+    private Set<Long> likes = new HashSet<>();
 
     @NotBlank(message = "Название фильма не может быть пустым")
     private String name;
@@ -22,4 +25,12 @@ public class Film {
 
     @Min(value = 0, message = "Длительность фильма не может быть отрицательным значением")
     private int duration;
+
+    public boolean addLike(Long id) {
+        return likes.add(id);
+    }
+
+    public boolean removeLike(Long id) {
+        return likes.remove(id);
+    }
 }

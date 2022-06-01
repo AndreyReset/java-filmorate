@@ -1,26 +1,20 @@
 package ru.yandex.practicum.filmorate.controller;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.film.FilmService;
-import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
-import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.util.List;
 import java.util.Optional;
 
 @RestController
 @Slf4j
+@RequiredArgsConstructor
 public class FilmController {
     private final FilmService filmService;
-
-    @Autowired
-    FilmController(FilmStorage filmStorage, FilmService filmService) {
-        this.filmService = filmService;
-    }
 
     @GetMapping("/films")
     public List<Film> findAll() {
@@ -29,37 +23,35 @@ public class FilmController {
     }
 
     @PostMapping(value = "/films")
-    public Film create(@Valid @RequestBody Film film, HttpServletResponse response) {
+    public Film create(@Valid @RequestBody Film film) {
         log.info("POST запрос на добавление фильма");
-        return filmService.create(film, response);
+        return filmService.create(film);
     }
 
     @PutMapping(value = "/films")
-    public Film update(@Valid @RequestBody Film film, HttpServletResponse response) {
+    public Film update(@Valid @RequestBody Film film) {
         log.info("PUT запрос на обновление фильма");
-        return filmService.update(film, response);
+        return filmService.update(film);
     }
 
     @GetMapping("/films/{id}")
-    public Optional<Film> getFilmById(@PathVariable Long id, HttpServletResponse response) {
+    public Optional<Film> getFilmById(@PathVariable Long id) {
         log.info("GET запрос на получение фильма с id = " + id);
-        return filmService.getFilmById(id, response);
+        return filmService.getFilmById(id);
     }
 
     @PutMapping(value = "/films/{id}/like/{userId}")
     public Film addLike(@PathVariable Long id,
-                        @PathVariable Long userId,
-                        HttpServletResponse response) {
+                        @PathVariable Long userId) {
         log.info("PUT запрос на лайк film : " + id + ", user : " + userId);
-        return filmService.addLike(id, userId, response);
+        return filmService.addLike(id, userId);
     }
 
     @DeleteMapping(value = "/films/{id}/like/{userId}")
     public Film removeLike(@PathVariable Long id,
-                        @PathVariable Long userId,
-                        HttpServletResponse response) {
+                        @PathVariable Long userId) {
         log.info("DELETE запрос на лайк film : " + id + ", user : " + userId);
-        return filmService.removeLike(id, userId, response);
+        return filmService.removeLike(id, userId);
     }
 
     @GetMapping("/films/popular")

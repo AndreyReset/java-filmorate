@@ -1,50 +1,41 @@
 package ru.yandex.practicum.filmorate.service.user;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.exception.BadRequestException;
+import ru.yandex.practicum.filmorate.exception.ObjNotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.service.valid.CustomException;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
-import javax.servlet.http.HttpServletResponse;
 import java.util.*;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class UserService {
     private final UserStorage userStorage;
 
-    @Autowired
-    public UserService(UserStorage userStorage) {
-        this.userStorage = userStorage;
-    }
-
-    public User create(User user, HttpServletResponse response) {
+    public User create(User user) {
         switch (userStorage.create(user)) {
             case 1:
-                response.setStatus(201);
-                break;
+                return user;
             case -1:
-                response.setStatus(400);
-                throw new CustomException("Пользователь с электронным адресом " + user.getEmail() +
-                                " уже зарегистрирован");
+                throw new BadRequestException("Пользователь с электронным адресом " + user.getEmail() +
+                        " уже зарегистрирован");
             case -2:
-                response.setStatus(400);
-                throw new CustomException("Пользователь с логином " + user.getLogin() +
-                                " уже зарегистрирован");
+                throw new BadRequestException("Пользователь с логином " + user.getLogin() +
+                        " уже зарегистрирован");
         }
         return user;
     }
 
-    public User update(User user, HttpServletResponse response) {
+    public User update(User user) {
         switch (userStorage.update(user)) {
             case 1:
-                response.setStatus(200);
-                break;
+                return user;
             case -1:
-                response.setStatus(404);
-                throw new CustomException("Пользователь не найден");
+                throw new ObjNotFoundException("Пользователь не найден");
         }
         return user;
     }
@@ -53,17 +44,16 @@ public class UserService {
         return userStorage.findAll();
     }
 
-    public Optional<User> getUserById(Long id, HttpServletResponse response) {
+    public Optional<User> getUserById(Long id) {
         Optional<User> user = userStorage.findAll().stream()
                 .filter(u -> Objects.equals(u.getId(), id)).findFirst();
         if (user.isEmpty()) {
-            response.setStatus(404);
-            throw new CustomException("Пользователь не найден");
+            throw new ObjNotFoundException("Пользователь не найден");
         }
         return user;
     }
 
-    public void addFriends(Long idUser1, Long idUser2, HttpServletResponse response) {
+    public void addFriends(Long idUser1, Long idUser2) {
         User user1 = null;
         User user2 = null;
         if (!Objects.equals(idUser1, idUser2)) {
@@ -77,21 +67,18 @@ public class UserService {
                 if (user1 != null && user2 != null) {
                     user1.addFriend(user2.getId());
                     user2.addFriend(user1.getId());
-                    response.setStatus(200);
                     break;
                 }
             }
             if (user1 == null || user2 == null) {
-                response.setStatus(404);
-                throw new CustomException("Один из пользователей не найден");
+                throw new ObjNotFoundException("Один из пользователей не найден");
             }
         } else {
-            response.setStatus(400);
-            throw new CustomException("Id пользователя и Id друга не могут быть одинаковыми");
+            throw new BadRequestException("Id пользователя и Id друга не могут быть одинаковыми");
         }
     }
 
-    public void removeFriends(Long idUser1, Long idUser2, HttpServletResponse response) {
+    public void removeFriends(Long idUser1, Long idUser2) {
         User user1 = null;
         User user2 = null;
         if (!Objects.equals(idUser1, idUser2)) {
@@ -105,21 +92,18 @@ public class UserService {
                 if (user1 != null && user2 != null) {
                     user1.removeFriend(idUser2);
                     user2.removeFriend(idUser1);
-                    response.setStatus(200);
                     break;
                 }
             }
             if (user1 == null || user2 == null) {
-                response.setStatus(404);
-                throw new CustomException("Один из пользователей не найден");
+                throw new ObjNotFoundException("Один из пользователей не найден");
             }
         } else {
-            response.setStatus(400);
-            throw new CustomException("Id пользователя и Id друга не могут быть одинаковыми");
+            throw new BadRequestException("Id пользователя и Id друга не могут быть одинаковыми");
         }
     }
 
-    public List<User> getFriends(Long idUser, HttpServletResponse response) {
+    public List<User> getFriends(Long idUser) {
         Set<Long> friendsId;
         List<User> friends = new ArrayList<>();
         for (User user : userStorage.findAll()) {
@@ -135,11 +119,10 @@ public class UserService {
                 return friends;
             }
         }
-        response.setStatus(404);
-        throw new CustomException("Пользователь с id: " + idUser + " не найден");
+        throw new ObjNotFoundException("Пользователь с id: " + idUser + " не найден");
     }
 
-    public List<User> getMutualFriends(Long idUser1, Long idUser2, HttpServletResponse response) {
+    public List<User> getMutualFriends(Long idUser1, Long idUser2) {
         Set<Long> user1Friends = new HashSet<>();
         Set<Long> user2Friends = new HashSet<>();
         Set<Long> idMutualFriends = new HashSet<>();
@@ -171,8 +154,7 @@ public class UserService {
             }
             return mutualFriends;
         } else {
-            response.setStatus(400);
-            throw new CustomException("Id пользователя и Id друга не могут быть одинаковыми");
+            throw new BadRequestException("Id пользователя и Id друга не могут быть одинаковыми");
         }
     }
 }

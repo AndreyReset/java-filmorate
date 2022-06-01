@@ -1,11 +1,11 @@
-package ru.yandex.practicum.filmorate.service.valid;
+package ru.yandex.practicum.filmorate.model;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public class errorNotification {
+public class ErrorNotification {
 
     private final String fieldName;
     private final String message;

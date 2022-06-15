@@ -1,4 +1,4 @@
-package ru.yandex.practicum.filmorate.valid;
+package ru.yandex.practicum.filmorate.service.valid;
 
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;

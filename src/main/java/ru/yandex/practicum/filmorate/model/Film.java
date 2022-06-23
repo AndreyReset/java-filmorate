@@ -5,14 +5,12 @@ import ru.yandex.practicum.filmorate.service.valid.After;
 
 import javax.validation.constraints.*;
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 
 @Data
 public class Film {
 
-    private Long id;
-    private Set<Long> likes = new HashSet<>();
+    private int id;
 
     @NotBlank(message = "Название фильма не может быть пустым")
     private String name;
@@ -26,11 +24,9 @@ public class Film {
     @Min(value = 0, message = "Длительность фильма не может быть отрицательным значением")
     private int duration;
 
-    public boolean addLike(Long id) {
-        return likes.add(id);
-    }
+    private int countLikes;
 
-    public boolean removeLike(Long id) {
-        return likes.remove(id);
-    }
+    private List<Genre> genres;
+
+    private Mpa mpa;
 }

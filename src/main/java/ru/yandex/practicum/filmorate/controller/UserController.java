@@ -8,7 +8,6 @@ import ru.yandex.practicum.filmorate.service.user.UserService;
 
 import javax.validation.Valid;
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @Slf4j
@@ -35,34 +34,34 @@ public class UserController {
     }
 
     @GetMapping("/users/{id}")
-    public Optional<User> getUserById(@PathVariable Long id) {
+    public User getUserById(@PathVariable int id) {
         log.info("GET запрос на получение данных пользователя с id = " + id);
         return userService.getUserById(id);
     }
 
     @PutMapping(value = "/users/{id}/friends/{friendId}")
-    public void addFriends(@PathVariable Long id,
-                           @PathVariable Long friendId) {
+    public void addFriends(@PathVariable int id,
+                           @PathVariable int friendId) {
         log.info("PUT запрос на добавление в друзья user1 : " + id + ", user2 : " + friendId);
         userService.addFriends(id, friendId);
     }
 
     @DeleteMapping(value = "/users/{id}/friends/{friendId}")
-    public void deleteFriends(@PathVariable Long id,
-                              @PathVariable Long friendId) {
+    public void deleteFriends(@PathVariable int id,
+                              @PathVariable int friendId) {
         log.info("DELETE запрос на удаление из друзей user1 : " + id + ", user2 : " + friendId);
         userService.removeFriends(id, friendId);
     }
 
     @GetMapping("/users/{id}/friends")
-    public List<User> getFriends(@PathVariable Long id) {
+    public List<User> getFriends(@PathVariable int id) {
         log.info("GET запрос на получение списка друзей у пользователя с id = " + id);
         return userService.getFriends(id);
     }
 
     @GetMapping("/users/{id}/friends/common/{otherId}")
-    public List<User> getMutualFriends(@PathVariable Long id,
-                                       @PathVariable Long otherId) {
+    public List<User> getMutualFriends(@PathVariable int id,
+                                       @PathVariable int otherId) {
         log.info("GET запрос на получение списка друзей у пользователя с id = " + id);
         return userService.getMutualFriends(id, otherId);
     }

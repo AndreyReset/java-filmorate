@@ -8,7 +8,6 @@ import ru.yandex.practicum.filmorate.service.film.FilmService;
 
 import javax.validation.Valid;
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @Slf4j
@@ -21,7 +20,6 @@ public class FilmController {
         log.info("GET запрос на получение списка всех фильмов");
         return filmService.getAllFilms();
     }
-
     @PostMapping(value = "/films")
     public Film create(@Valid @RequestBody Film film) {
         log.info("POST запрос на добавление фильма");
@@ -35,21 +33,21 @@ public class FilmController {
     }
 
     @GetMapping("/films/{id}")
-    public Optional<Film> getFilmById(@PathVariable Long id) {
+    public Film getFilmById(@PathVariable int id) {
         log.info("GET запрос на получение фильма с id = " + id);
         return filmService.getFilmById(id);
     }
 
     @PutMapping(value = "/films/{id}/like/{userId}")
-    public Film addLike(@PathVariable Long id,
-                        @PathVariable Long userId) {
+    public Film addLike(@PathVariable int id,
+                        @PathVariable int userId) {
         log.info("PUT запрос на лайк film : " + id + ", user : " + userId);
         return filmService.addLike(id, userId);
     }
 
     @DeleteMapping(value = "/films/{id}/like/{userId}")
-    public Film removeLike(@PathVariable Long id,
-                        @PathVariable Long userId) {
+    public Film removeLike(@PathVariable int id,
+                        @PathVariable int userId) {
         log.info("DELETE запрос на лайк film : " + id + ", user : " + userId);
         return filmService.removeLike(id, userId);
     }

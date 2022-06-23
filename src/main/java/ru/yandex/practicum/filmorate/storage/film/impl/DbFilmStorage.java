@@ -61,56 +61,68 @@ public class DbFilmStorage implements FilmDbStorage {
     @Override
     public int update(Film film) {
         SqlRowSet filmRows = jdbcTemplate.queryForRowSet("SELECT * FROM movie " +
-                        "WHERE film_id = ? LIMIT 1", film.getId());
+                "WHERE film_id = ? LIMIT 1", film.getId());
         if (filmRows.next()) {
             String sql = "UPDATE movie SET film_name=?, film_description=?, film_release_date=?, " +
                     "film_duration=?, mpa_id=? WHERE film_id=?";
             jdbcTemplate.update(sql, film.getName(), film.getDescription(), film.getReleaseDate(),
                     film.getDuration(), film.getMpa().getId(), film.getId());
-
-            List<Genre> genresFromDB = new ArrayList<>();
-            Set<Genre> genresFromObj = new HashSet<>();
-            List<Genre> toUpdateGenre = new ArrayList<>();
-            if (film.getGenres() != null) genresFromObj.addAll(film.getGenres());
-
-            SqlRowSet genreRows = jdbcTemplate.queryForRowSet("SELECT * FROM genres " +
-                    "WHERE film_id = ?", film.getId());
-
-            while(genreRows.next()) {
-                Genre genre = new Genre();
-                genre.setId(genreRows.getInt("genre_id"));
-                genresFromDB.add(genre);
-            }
-
-            for (Genre g : genresFromObj) {
-                if (!genresFromDB.remove(g)) toUpdateGenre.add(g);
-            }
-
-            if (!genresFromDB.isEmpty()) {
-                for (Genre g : genresFromDB) {
-                    sql = "DELETE FROM genres WHERE film_id=? and genre_id=?";
-                    jdbcTemplate.update(sql, film.getId(), g.getId());
+            //обновление жанров
+            //получаем данные о жанрах из БД
+            List<Genre> genresFromDB = genresFromDb(film.getId());
+            //если на обнавление подали нулевой список жанров или пустой
+            if (film.getGenres() == null || film.getGenres().isEmpty()) {
+                //удаляем из БД инфо о жанрах
+                removeGenresFromDb(film.getId(), genresFromDB);
+            } else {
+                //формируем уникальный сет жанров из объекта обновления
+                Set<Genre> genresFromObj = new HashSet<>(film.getGenres());
+                //формируем список жанров для обновы в БД
+                List<Genre> toUpdateGenre = new ArrayList<>();
+                for (Genre g : genresFromObj) {
+                    if (!genresFromDB.remove(g)) toUpdateGenre.add(g);
                 }
+                //удаляем из БД неактуальные жанры и добавляем новые
+                removeGenresFromDb(film.getId(), genresFromDB);
+                insertGenresToDb(film.getId(), toUpdateGenre);
+                //получаем данные о жанрах из БД
+                genresFromDB = genresFromDb(film.getId());
+                //устанавливаем данные в объект для ответа
+                film.setGenres(genresFromDB);
             }
-            if (!toUpdateGenre.isEmpty()) {
-                for (Genre g : toUpdateGenre) {
-                    sql = "INSERT INTO genres (film_id, genre_id) VALUES (?,?)";
-                    jdbcTemplate.update(sql, film.getId(), g.getId());
-                }
-            }
-            genreRows = jdbcTemplate.queryForRowSet("SELECT * FROM genres " +
-                    "WHERE film_id = ?", film.getId());
-            genresFromDB.clear();
-            while(genreRows.next()) {
-                Genre genre = new Genre();
-                genre.setId(genreRows.getInt("genre_id"));
-                genresFromDB.add(genre);
-            }
-            if (genresFromDB.isEmpty()) genresFromDB = null;
-            film.setGenres(genresFromDB);
             return 1;
-        } else {
+        } else { //если фильм не найден
             return -1;
+        }
+    }
+
+    private List<Genre> genresFromDb(int filmId) {
+        SqlRowSet genreRows = jdbcTemplate.queryForRowSet("SELECT * FROM genres " +
+                "WHERE film_id = ?", filmId);
+        List<Genre> genresFromDB = new ArrayList<>();
+        while(genreRows.next()) {
+            Genre genre = new Genre();
+            genre.setId(genreRows.getInt("genre_id"));
+            genresFromDB.add(genre);
+        }
+        return genresFromDB;
+    }
+
+    private void removeGenresFromDb(int filmId, List<Genre> genresFromDB) {
+        if (!genresFromDB.isEmpty()) {
+            for (Genre g : genresFromDB) {
+                String sql = "DELETE FROM genres WHERE film_id=? and genre_id=?";
+                jdbcTemplate.update(sql, filmId, g.getId());
+            }
+        }
+    }
+
+    private void insertGenresToDb(int filmId, List<Genre> toUpdateGenre) {
+        if (!toUpdateGenre.isEmpty()) {
+            for (Genre g : toUpdateGenre) {
+                String sql = "INSERT INTO genres (film_id, genre_id) VALUES (?,?)";
+                jdbcTemplate.update(sql, filmId, g.getId());
+            }
         }
     }
 

@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS movie (
     film_description VARCHAR(200),
     film_release_date DATE,
     film_duration INT,
-    film_count_likes INT,
+    film_count_likes INT DEFAULT '0',
     mpa_id INT
 );
 

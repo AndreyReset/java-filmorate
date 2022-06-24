@@ -22,3 +22,6 @@ INSERT INTO genre (genre_name) VALUES ('Боевик');
 
 INSERT INTO friends_status (friends_status_name) VALUES ('Запрос на добавление');
 INSERT INTO friends_status (friends_status_name) VALUES ('Дружба подтверждена');
+
+--для теста
+--INSERT INTO users (user_login, user_email, user_name, user_birthday) VALUES ('dolore', 'dolore@mail.ru', 'dolore', '1999-04-30');

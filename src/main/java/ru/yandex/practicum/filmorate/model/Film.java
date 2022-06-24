@@ -28,5 +28,6 @@ public class Film {
 
     private List<Genre> genres;
 
+    @NotNull(message = "Возрастной рейтинг не может быть пустым")
     private Mpa mpa;
 }

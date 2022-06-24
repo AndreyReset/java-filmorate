@@ -7,22 +7,21 @@ import ru.yandex.practicum.filmorate.exception.BadRequestException;
 import ru.yandex.practicum.filmorate.exception.ObjNotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
-import ru.yandex.practicum.filmorate.storage.user.UserStorage;
+import ru.yandex.practicum.filmorate.storage.film.FilmDbStorage;
+import ru.yandex.practicum.filmorate.storage.user.UserDbStorage;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class FilmService {
-    private final FilmStorage filmStorage;
-    private final UserStorage userStorage;
+    private final FilmDbStorage filmDbStorage;
+    private final UserDbStorage userDbStorage;
 
     public Film create(Film film) {
-        switch (filmStorage.create(film)) {
+        switch (filmDbStorage.create(film)) {
             case 1:
                 return film;
             case -1:
@@ -33,7 +32,7 @@ public class FilmService {
     }
 
     public Film update(Film film) {
-        switch (filmStorage.update(film)) {
+        switch (filmDbStorage.update(film)) {
             case 1:
                 return film;
             case -1:
@@ -43,52 +42,41 @@ public class FilmService {
     }
 
     public List<Film> getAllFilms() {
-        return filmStorage.findAll();
+        return filmDbStorage.findAll();
     }
 
-    public Optional<Film> getFilmById(Long id) {
-        Optional<Film> film = filmStorage.findAll().stream()
-                .filter(f -> f.getId().equals(id))
-                .findFirst();
-        if (film.isEmpty()) {
+    public Film getFilmById(int id) {
+        Film film = filmDbStorage.findFilmById(id);
+        if (film == null)
             throw new ObjNotFoundException("Фильм не найден");
-        }
         return film;
     }
 
-    public Film addLike(Long idFilm, Long idUser) {
-        for (Film film : filmStorage.findAll()) {
-            if (film.getId().equals(idFilm)) {
-                for (User user : userStorage.findAll()) {
-                    if (user.getId().equals(idUser)) {
-                        film.addLike(idUser);
-                        return film;
-                    }
-                }
-                throw new ObjNotFoundException("Пользователь не найден");
-            }
+    public Film addLike(int idFilm, int idUser) {
+        Film film = getFilmById(idFilm);
+        User user = userDbStorage.findUserById(idUser);
+
+        if (user != null) {
+            film.setCountLikes(film.getCountLikes() + filmDbStorage.addLike(idFilm, idUser));
+            return film;
         }
-        throw new ObjNotFoundException("Фильм не найден");
+        throw new ObjNotFoundException("Пользователь не найден");
     }
 
-    public Film removeLike(Long idFilm, Long idUser) {
-        for (Film film : filmStorage.findAll()) {
-            if (film.getId().equals(idFilm)) {
-                for (User user : userStorage.findAll()) {
-                    if (user.getId().equals(idUser)) {
-                        film.removeLike(idUser);
-                        return film;
-                    }
-                }
-                throw new ObjNotFoundException("Пользователь не найден");
-            }
+    public Film removeLike(int idFilm, int idUser) {
+        Film film = getFilmById(idFilm);
+        User user = userDbStorage.findUserById(idUser);
+
+        if (user != null) {
+            film.setCountLikes(film.getCountLikes() - filmDbStorage.addLike(idFilm, idUser));
+            return film;
         }
-        throw new ObjNotFoundException("Фильм не найден");
+        throw new ObjNotFoundException("Пользователь не найден");
     }
 
     public List<Film> getPopularFilm(int count) {
-        return filmStorage.findAll().stream()
-                .sorted((o1, o2)->o2.getLikes().size()-o1.getLikes().size())
+        return filmDbStorage.findAll().stream()
+                .sorted((o1, o2)->o2.getCountLikes()-o1.getCountLikes())
                 .limit(count)
                 .collect(Collectors.toList());
     }

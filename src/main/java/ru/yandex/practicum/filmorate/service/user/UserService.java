@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.BadRequestException;
 import ru.yandex.practicum.filmorate.exception.ObjNotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.user.UserStorage;
+import ru.yandex.practicum.filmorate.storage.user.UserDbStorage;
 
 import java.util.*;
 
@@ -14,10 +14,10 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class UserService {
-    private final UserStorage userStorage;
+    private final UserDbStorage userDbStorage;
 
     public User create(User user) {
-        switch (userStorage.create(user)) {
+        switch (userDbStorage.create(user)) {
             case 1:
                 return user;
             case -1:
@@ -26,131 +26,70 @@ public class UserService {
             case -2:
                 throw new BadRequestException("Пользователь с логином " + user.getLogin() +
                         " уже зарегистрирован");
+            case 0:
+                throw new BadRequestException("Ошибка добавлния данных в БД");
         }
         return user;
     }
 
     public User update(User user) {
-        switch (userStorage.update(user)) {
+        switch (userDbStorage.update(user)) {
             case 1:
                 return user;
             case -1:
-                throw new ObjNotFoundException("Пользователь не найден");
+                throw new ObjNotFoundException("Пользователь для обновления не найден");
+            case -2:
+                throw new BadRequestException("Пользователь с электронным адресом " + user.getEmail() +
+                        " уже зарегистрирован");
+            case -3:
+                throw new BadRequestException("Пользователь с логином " + user.getLogin() +
+                        " уже зарегистрирован");
         }
         return user;
     }
 
     public List<User> getAllUsers() {
-        return userStorage.findAll();
+        return userDbStorage.findAll();
     }
 
-    public Optional<User> getUserById(Long id) {
-        Optional<User> user = userStorage.findAll().stream()
-                .filter(u -> Objects.equals(u.getId(), id)).findFirst();
-        if (user.isEmpty()) {
+    public User getUserById(int id) {
+        User user = userDbStorage.findUserById(id);
+        if (user == null) {
             throw new ObjNotFoundException("Пользователь не найден");
         }
         return user;
     }
 
-    public void addFriends(Long idUser1, Long idUser2) {
-        User user1 = null;
-        User user2 = null;
-        if (!Objects.equals(idUser1, idUser2)) {
-            for (User user : userStorage.findAll()) {
-                if (user.getId().equals(idUser1)) {
-                    user1 = user;
-                }
-                if (user.getId().equals(idUser2)) {
-                    user2 = user;
-                }
-                if (user1 != null && user2 != null) {
-                    user1.addFriend(user2.getId());
-                    user2.addFriend(user1.getId());
-                    break;
-                }
-            }
-            if (user1 == null || user2 == null) {
-                throw new ObjNotFoundException("Один из пользователей не найден");
-            }
+    public void addFriends(int idUser1, int idUser2) {
+        if (idUser1 != idUser2) {
+            int resAddFriend = userDbStorage.addFriend(idUser1, idUser2);
+            if (resAddFriend == -1) throw new ObjNotFoundException("Один из пользователей не найден");
         } else {
             throw new BadRequestException("Id пользователя и Id друга не могут быть одинаковыми");
         }
     }
 
-    public void removeFriends(Long idUser1, Long idUser2) {
-        User user1 = null;
-        User user2 = null;
-        if (!Objects.equals(idUser1, idUser2)) {
-            for (User user : userStorage.findAll()) {
-                if (user.getId().equals(idUser1)) {
-                    user1 = user;
-                }
-                if (user.getId().equals(idUser2)) {
-                    user2 = user;
-                }
-                if (user1 != null && user2 != null) {
-                    user1.removeFriend(idUser2);
-                    user2.removeFriend(idUser1);
-                    break;
-                }
-            }
-            if (user1 == null || user2 == null) {
-                throw new ObjNotFoundException("Один из пользователей не найден");
-            }
+    public void removeFriends(int idUser1, int idUser2) {
+        if (idUser1 != idUser2) {
+            userDbStorage.removeFriend(idUser1, idUser2);
         } else {
             throw new BadRequestException("Id пользователя и Id друга не могут быть одинаковыми");
         }
     }
 
-    public List<User> getFriends(Long idUser) {
-        Set<Long> friendsId;
-        List<User> friends = new ArrayList<>();
-        for (User user : userStorage.findAll()) {
-            if (user.getId().equals(idUser)) {
-                friendsId = user.getFriends();
-                for (User user2 : userStorage.findAll()) {
-                    for (Long id : friendsId) {
-                        if (Objects.equals(user2.getId(), id)) {
-                            friends.add(user2);
-                        }
-                    }
-                }
-                return friends;
-            }
-        }
-        throw new ObjNotFoundException("Пользователь с id: " + idUser + " не найден");
+    public List<User> getFriends(int idUser) {
+        return userDbStorage.getFriendsByUserId(idUser);
     }
 
-    public List<User> getMutualFriends(Long idUser1, Long idUser2) {
-        Set<Long> user1Friends = new HashSet<>();
-        Set<Long> user2Friends = new HashSet<>();
-        Set<Long> idMutualFriends = new HashSet<>();
+    public List<User> getMutualFriends(int idUser1, int idUser2) {
+        List<User> user1Friends = getFriends(idUser1);
+        List<User> user2Friends = getFriends(idUser2);
         List<User> mutualFriends = new ArrayList<>();
 
-        if (!Objects.equals(idUser1, idUser2)) {
-            for (User user : userStorage.findAll()) {
-                if (user.getId().equals(idUser1)) {
-                    user1Friends = user.getFriends();
-                }
-                if (user.getId().equals(idUser2)) {
-                    user2Friends = user.getFriends();
-                }
-                if (user1Friends.size() > 0 && user2Friends.size() > 0) break;
-            }
-            if (user1Friends.size() > 0 && user2Friends.size() > 0) {
-                for (Long id : user1Friends) {
-                    if (user2Friends.contains(id)) {
-                        idMutualFriends.add(id);
-                    }
-                }
-            }
-            for (User user : userStorage.findAll()) {
-                for (Long id : idMutualFriends) {
-                    if (Objects.equals(id, user.getId())) {
-                        mutualFriends.add(user);
-                    }
-                }
+        if (idUser1 != idUser2) {
+            for (User u1 : user1Friends) {
+                if (user2Friends.remove(u1)) mutualFriends.add(u1);
+                if (user2Friends.isEmpty()) break;
             }
             return mutualFriends;
         } else {

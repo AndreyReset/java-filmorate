@@ -19,41 +19,32 @@ public class DbFilmStorage implements FilmDbStorage {
 
     @Override
     public int create(Film film) {
-        if (film.getMpa() == null) return -3;
-        SqlRowSet filmRows = jdbcTemplate.queryForRowSet("SELECT * FROM movie " +
-                "WHERE film_name = ? and film_release_date = ? LIMIT 1",
-                film.getName(), film.getReleaseDate());
-        if (!filmRows.next()) {
-            if (jdbcTemplate.update("INSERT INTO movie " +
-                    "(film_name, film_description, film_release_date, film_duration, film_count_likes, mpa_id) " +
-                    "values (?,?,?,?,?,?)",
-                    film.getName(),
-                    film.getDescription(),
-                    film.getReleaseDate(),
-                    film.getDuration(),
-                    0,
-                    film.getMpa().getId()) == 1) {
-                SqlRowSet filmRows2 = jdbcTemplate.queryForRowSet(
-                        "SELECT mov.*, mpa.* " +
-                        "FROM movie AS mov " +
-                        "LEFT JOIN mpa ON mov.mpa_id=mpa.mpa_id " +
-                        "WHERE mov.film_name = ? and mov.film_release_date = ? LIMIT 1",
-                        film.getName(), film.getReleaseDate());
-                if (filmRows2.next()) {
-                    film.setId(filmRows2.getInt("film_id"));
-                    film.getMpa().setName(filmRows2.getString("mpa_name"));
-                    film.getMpa().setDescription(filmRows2.getString("mpa_description"));
-                    if (film.getGenres() != null) {
-                        for (Genre g : film.getGenres()) {
-                            jdbcTemplate.update("INSERT INTO genres (film_id, genre_id) values (?,?)",
-                                    film.getId(), g.getId());
-                        }
-                    }
-                    return 1;
-                }
+        String sql = "INSERT INTO movie " +
+                "(film_name, film_description, film_release_date, film_duration, mpa_id) " +
+                "SELECT ?,?,?,?,? " +
+                "WHERE NOT EXISTS  " +
+                "(SELECT film_id FROM movie WHERE film_name=? and film_release_date=?) ";
+        if (jdbcTemplate.update(sql,
+                                film.getName(),
+                                film.getDescription(),
+                                film.getReleaseDate(),
+                                film.getDuration(),
+                                film.getMpa().getId(),
+                                film.getName(),
+                                film.getReleaseDate()) == 1) {
+            //получаем id добавленной записи
+            SqlRowSet filmRows = jdbcTemplate.queryForRowSet("SELECT film_id FROM movie " +
+                    "WHERE film_name=? and film_release_date=? LIMIT 1", film.getName(), film.getReleaseDate());
+            //устанавлиеваем id в объект для ответа
+            if (filmRows.next()) {
+                film.setId(filmRows.getInt("film_id"));
             }
-            return -2;
-        } else {
+            //добавляем жанры в БД, если они были переданы
+            if (film.getGenres() != null) {
+                insertGenresToDb(film.getId(), film.getGenres());
+            }
+            return 1;
+        } else { //фильм уже есть в БД
             return -1;
         }
     }
@@ -69,7 +60,7 @@ public class DbFilmStorage implements FilmDbStorage {
                     film.getDuration(), film.getMpa().getId(), film.getId());
             //обновление жанров
             //получаем данные о жанрах из БД
-            List<Genre> genresFromDB = genresFromDb(film.getId());
+            List<Genre> genresFromDB = readGenresFromDb(film.getId());
             //если на обнавление подали нулевой список жанров или пустой
             if (film.getGenres() == null || film.getGenres().isEmpty()) {
                 //удаляем из БД инфо о жанрах
@@ -86,7 +77,7 @@ public class DbFilmStorage implements FilmDbStorage {
                 removeGenresFromDb(film.getId(), genresFromDB);
                 insertGenresToDb(film.getId(), toUpdateGenre);
                 //получаем данные о жанрах из БД
-                genresFromDB = genresFromDb(film.getId());
+                genresFromDB = readGenresFromDb(film.getId());
                 //устанавливаем данные в объект для ответа
                 film.setGenres(genresFromDB);
             }
@@ -96,13 +87,15 @@ public class DbFilmStorage implements FilmDbStorage {
         }
     }
 
-    private List<Genre> genresFromDb(int filmId) {
-        SqlRowSet genreRows = jdbcTemplate.queryForRowSet("SELECT * FROM genres " +
-                "WHERE film_id = ?", filmId);
+    private List<Genre> readGenresFromDb(int filmId) {
+        SqlRowSet genreRows = jdbcTemplate.queryForRowSet("SELECT gs.*, ge.* FROM genres AS gs " +
+                "LEFT JOIN genre AS ge ON gs.genre_id=ge.genre_id " +
+                "WHERE gs.film_id=? ", filmId);
         List<Genre> genresFromDB = new ArrayList<>();
         while(genreRows.next()) {
             Genre genre = new Genre();
             genre.setId(genreRows.getInt("genre_id"));
+            genre.setName(genreRows.getString("genre_name"));
             genresFromDB.add(genre);
         }
         return genresFromDB;
@@ -163,17 +156,7 @@ public class DbFilmStorage implements FilmDbStorage {
         mpa.setDescription(filmRows.getString("mpa_description"));
         film.setMpa(mpa);
 
-        List<Genre> genres = new ArrayList<>();
-        SqlRowSet genresRows = jdbcTemplate.queryForRowSet("SELECT gs.*, ge.* FROM genres AS gs " +
-                        "LEFT JOIN genre AS ge ON gs.genre_id=ge.genre_id " +
-                        "WHERE gs.film_id=? ",
-                film.getId());
-        while (genresRows.next()) {
-            Genre genre = new Genre();
-            genre.setId(genresRows.getInt("genre_id"));
-            genre.setName(genresRows.getString("genre_name"));
-            genres.add(genre);
-        }
+        List<Genre> genres = readGenresFromDb(film.getId());
         if (genres.isEmpty()) genres = null;
         film.setGenres(genres);
 

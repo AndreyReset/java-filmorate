@@ -27,10 +27,6 @@ public class FilmService {
             case -1:
                 throw new BadRequestException("Фильм с названием " + film.getName() +
                         " и датой релиза " + film.getReleaseDate() + " уже добавлен");
-            case -2:
-                throw new BadRequestException("Ошибка добавления фильма в БД");
-            case -3:
-                throw new BadRequestException("Возрастной рейтинг не может быть пустым");
         }
         return film;
     }
